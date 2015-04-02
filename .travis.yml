@@ -1,0 +1,16 @@
+language: java
+services:
+- redis-server
+branches:
+  only:
+  - master
+jdk:
+- oraclejdk8
+- oraclejdk7
+- openjdk6
+script:
+- mvn test
+- mvn -Dintegration=true test
+after_script:
+- mvn cobertura:cobertura
+- mvn site
