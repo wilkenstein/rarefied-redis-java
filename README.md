@@ -31,8 +31,3 @@ This project uses mvn test + redis-mock-java.
 ## Roadmap
 
 ## Versions
-
-* 0.0.1
-  - Some Abstractions implemented.
-  - Some Abstractions unit-tested.
-  - Some Abstractions integration-tested.
