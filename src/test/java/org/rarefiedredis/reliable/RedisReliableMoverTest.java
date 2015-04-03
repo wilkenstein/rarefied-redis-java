@@ -12,6 +12,7 @@ import org.rarefiedredis.redis.WrongTypeException;
 import org.rarefiedredis.redis.NotImplementedException;
 import org.rarefiedredis.redis.SyntaxErrorException;
 import org.rarefiedredis.redis.adapter.jedis.JedisIRedisClient;
+import org.rarefiedredis.redis.IRedisSortedSet.ZsetPair;
 
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
@@ -198,6 +199,126 @@ public class RedisReliableMoverTest {
         catch (WrongTypeException e) {
             assertEquals("set", client.type(d));
             assertEquals(3L, (long)client.llen(s));
+            return;
+        }
+        catch (Exception e) {
+        }
+        assertEquals(false, true);
+    }
+
+    @Test public void redisReliableSortedSetMoverShouldMoveAMemberFromOneSetToANonExistentKey() throws WrongTypeException, NotImplementedException {
+        if (client instanceof RedisMock) {
+            // TODO: zsets are not implemented in RedisMock yet.
+            return;
+        }
+        RedisReliableMover mover = new RedisReliableMover(client);
+        String s = rander.randkey(), d = rander.randkey();
+        String v = "v";
+        client.zadd(s, new ZsetPair(v, 0d));
+        assertEquals(v, mover.move(new RedisReliableSortedSetMover(), s, d, v));
+        assertEquals("zset", client.type(d));
+        assertEquals(0d, (double)client.zscore(d, v), 0.01d);
+        assertEquals(null, client.zscore(s, v));
+    }
+
+    @Test public void redisReliableSortedSetMoverShouldMoveAMemberFromOneSetToAnother() throws WrongTypeException, NotImplementedException {
+        if (client instanceof RedisMock) {
+            // TODO: zsets are not implemented in RedisMock yet.
+            return;
+        }
+        RedisReliableMover mover = new RedisReliableMover(client);
+        String s = rander.randkey(), d = rander.randkey();
+        String v = "v", v2 = "v2";
+        client.zadd(s, new ZsetPair(v, 0d));
+        client.zadd(d, new ZsetPair(v2, 2d));
+        assertEquals(v, mover.move(new RedisReliableSortedSetMover(), s, d, v));
+        assertEquals(0d, (double)client.zscore(d, v), 0.01d);
+        assertEquals(null, client.zscore(s, v));
+        assertEquals(2L, (long)client.zcard(d));
+    }
+
+    @Test public void redisReliableSortedSetMoverShouldNotMoveAMemberIntoANonSetKey() throws WrongTypeException, NotImplementedException {
+        if (client instanceof RedisMock) {
+            // TODO: zsets are not implemented in RedisMock yet.
+            return;
+        }
+        RedisReliableMover mover = new RedisReliableMover(client);
+        String s = rander.randkey(), d = rander.randkey();
+        String v = "v";
+        client.zadd(s, new ZsetPair(v, 0d));
+        client.lpush(d, v);
+        try {
+            mover.move(new RedisReliableSortedSetMover(), s, d, v);
+        }
+        catch (WrongTypeException wte) {
+            assertEquals(0d, (double)client.zscore(s, v), 0.01d);
+            assertEquals("list", client.type(d));
+            return;
+        }
+        catch (Exception e) {
+        }
+        assertEquals(false, true);
+    }
+
+    @Test public void redisReliableSortedSetMoverShouldMoveARandomMemberFromOneSetToANonExistentKey() throws WrongTypeException, NotImplementedException {
+        if (client instanceof RedisMock) {
+            // TODO: zsets are not implemented in RedisMock yet.
+            return;
+        }
+        RedisReliableMover mover = new RedisReliableMover(client);
+        String s = rander.randkey(), d = rander.randkey();
+        String v1 = "v1", v2 = "v2", v3 = "v3";
+        List<ZsetPair> vs = new ArrayList<ZsetPair>(3);
+        vs.add(new ZsetPair(v1, 1d));
+        vs.add(new ZsetPair(v2, 2d));
+        vs.add(new ZsetPair(v3, 3d));
+        client.zadd(s, vs.get(0), vs.get(1), vs.get(2));
+        String moved = mover.move(new RedisReliableSortedSetMover(), s, d);
+        assertEquals(v1, moved);
+        assertEquals(1d, (double)client.zscore(d, moved), 0.01d);
+        assertEquals(null, client.zscore(s, moved));
+        assertEquals(2L, (long)client.zcard(s));
+        assertEquals(1L, (long)client.zcard(d));
+    }
+
+    @Test public void redisReliableSortedSetMoverShouldMoveARandomMemberFromOneSetToAnother() throws WrongTypeException, NotImplementedException {
+        if (client instanceof RedisMock) {
+            // TODO: zsets are not implemented in RedisMock yet.
+            return;
+        }
+        RedisReliableMover mover = new RedisReliableMover(client);
+        String s = rander.randkey(), d = rander.randkey();
+        String v1 = "v1", v2 = "v2", v3 = "v3";
+        List<ZsetPair> vs = new ArrayList<ZsetPair>(3);
+        vs.add(new ZsetPair(v1, 1d));
+        vs.add(new ZsetPair(v2, 2d));
+        vs.add(new ZsetPair(v3, 3d));
+        client.zadd(s, vs.get(0), vs.get(1), vs.get(2));
+        client.zadd(d, new ZsetPair("e", 5d));
+        String moved = mover.move(new RedisReliableSortedSetMover(), s, d);
+        assertEquals(v1, moved);
+        assertEquals(1d, (double)client.zscore(d, moved), 0.01d);
+        assertEquals(null, client.zscore(s, moved));
+        assertEquals(2L, (long)client.zcard(s));
+        assertEquals(2L, (long)client.zcard(d));
+    }
+
+    @Test public void redisReliableSortedSetMoverShouldNotMoveARandomMemberIntoANonSetKey() throws WrongTypeException, NotImplementedException, SyntaxErrorException {
+        if (client instanceof RedisMock) {
+            // TODO: zsets are not implemented in RedisMock yet.
+            return;
+        }
+        RedisReliableMover mover = new RedisReliableMover(client);
+        String s = rander.randkey(), d = rander.randkey();
+        String v = "v";
+        client.zadd(s, new ZsetPair(v, 1d));
+        client.set(d, v);
+        try {
+            mover.move(new RedisReliableSortedSetMover(), s, d);
+        }
+        catch (WrongTypeException wte) {
+            assertEquals(1d, (double)client.zscore(s, v), 0.01d);
+            assertEquals(v, client.get(d));
             return;
         }
         catch (Exception e) {
