@@ -13,7 +13,7 @@ Pure javascript implementations of redis Abstractions. Part of the [Rarefied Red
 <dependency>
   <groupId>org.rarefiedredis</groupId>
   <artifactId>rarefied-redis-java</artifactId>
-  <version>0.0.1</version>
+  <version>0.0.2</version>
 </dependency>
 ````
 
