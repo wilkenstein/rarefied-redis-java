@@ -13,16 +13,25 @@ public final class RedisCheckAndSet {
     }
 
     public <T> List<Object> checkAndSet(IRedisCheckAndSet<T> cas, String key) {
+        IRedisClient client = this.client.createClient();
+        if (client == null) {
+            return null;
+        }
+        List<Object> replies = null;
         try {
             client.watch(key);
             T value = cas.get(client, key);
             IRedisClient multi = client.multi();
             multi = cas.set(multi, key, value);
-            return multi.exec();
+            replies = multi.exec();
         }
         catch (Exception e) {
-            return null;
+            replies = null;
         }
+        finally {
+            client.close();
+        }
+        return replies;
     }
 
 }
