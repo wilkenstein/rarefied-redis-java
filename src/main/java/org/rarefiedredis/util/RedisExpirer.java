@@ -12,7 +12,7 @@ import java.util.UUID;
 public final class RedisExpirer {
 
     private IRedisClient client;
-    private Map<String, Map<String, Timer>> expiries;
+    private Map<String, Map<String, TimerTask>> expiries;
     private String listKey;
     private String separator;
     private IRedisExpirer expirer;
@@ -25,7 +25,7 @@ public final class RedisExpirer {
 
     public RedisExpirer(IRedisClient client, IRedisExpirer expirer, String listKey, String separator) {
         this.client = client;
-        this.expiries = new HashMap<String, Map<String, Timer>>();
+        this.expiries = new HashMap<String, Map<String, TimerTask>>();
         this.listKey = listKey;
         this.separator = separator;
         this.expirer = expirer;
@@ -44,17 +44,18 @@ public final class RedisExpirer {
             multi.exec();
             synchronized (this) {
                 if (!expiries.containsKey(key)) {
-                    expiries.put(key, new HashMap<String, Timer>());
+                    expiries.put(key, new HashMap<String, TimerTask>());
                 }
             }
-            synchronized (this) {
-                expiries.get(key).put(element, timer);
-            }
-            timer.schedule(new TimerTask() {
+            final TimerTask task = new TimerTask() {
                     @Override public void run() {
                         expired(key, element, lelem);
                     }
-                }, timeout*1000);
+                };
+            synchronized (this) {
+                expiries.get(key).put(element, task);
+            }
+            timer.schedule(task, timeout*1000);
         }
         catch (Exception e) {
             expirer.expireError(e);
@@ -73,17 +74,18 @@ public final class RedisExpirer {
             multi.exec();
             synchronized (this) {
                 if (!expiries.containsKey(key)) {
-                    expiries.put(key, new HashMap<String, Timer>());
+                    expiries.put(key, new HashMap<String, TimerTask>());
                 }
             }
-            synchronized (this) {
-                expiries.get(key).put(element, timer);
-            }
-            timer.schedule(new TimerTask() {
+            final TimerTask task = new TimerTask() {
                     @Override public void run() {
                         expired(key, element, lelem);
                     }
-                }, timeout);
+                };
+            synchronized (this) {
+                expiries.get(key).put(element, task);
+            }
+            timer.schedule(task, timeout);
         }
         catch (Exception e) {
             expirer.expireError(e);
