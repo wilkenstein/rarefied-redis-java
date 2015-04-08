@@ -17,6 +17,7 @@ public final class RedisExpirer {
     private String separator;
     private IRedisExpirer expirer;
     private RedisScanner scanner;
+    private Timer timer;
 
     public RedisExpirer(IRedisClient client, IRedisExpirer expirer, String listKey) {
         this(client, expirer, listKey, ";");
@@ -29,6 +30,7 @@ public final class RedisExpirer {
         this.separator = separator;
         this.expirer = expirer;
         this.scanner = new RedisScanner(client);
+        timer = new Timer();
     }
 
     public RedisExpirer expire(final String key, final int timeout, final String element) {
@@ -45,7 +47,6 @@ public final class RedisExpirer {
                     expiries.put(key, new HashMap<String, Timer>());
                 }
             }
-            Timer timer = new Timer();
             synchronized (this) {
                 expiries.get(key).put(element, timer);
             }
@@ -75,7 +76,6 @@ public final class RedisExpirer {
                     expiries.put(key, new HashMap<String, Timer>());
                 }
             }
-            Timer timer = new Timer();
             synchronized (this) {
                 expiries.get(key).put(element, timer);
             }
