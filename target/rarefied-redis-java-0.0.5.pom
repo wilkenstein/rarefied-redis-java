@@ -4,7 +4,7 @@
   
   <groupId>org.rarefiedredis</groupId>
   <artifactId>rarefied-redis-java</artifactId>
-  <version>0.0.2</version>
+  <version>0.0.5</version>
   <packaging>jar</packaging>
   
   <name>rarefied-redis-java</name>
@@ -54,7 +54,7 @@
     <dependency>
       <groupId>org.rarefiedredis.redis</groupId>
       <artifactId>redis-java</artifactId>
-      <version>0.0.10</version>
+      <version>0.0.14</version>
     </dependency>
     <!-- Jedis -->
     <dependency>
